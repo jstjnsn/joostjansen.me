@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>joostjansen</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        margin: 0;
+      }
+
+      html,
+      body,
+      .app {
+        height: 100%;
+      }
+
+      body {
+        position: relative;
+      }
+
+      h1,
+      p {
+        font-family: "Lato", sans-serif;
+      }
+
+      canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: -1;
+      }
+
+      .app {
+        display: flex;
+        flex-flow: column nowrap;
+      }
+
+      .controls {
+        flex: 1;
+        display: flex;
+        flex-flow: row nowrap;
+      }
+
+      .previous,
+      .next {
+        flex: 1;
+        position: relative;
+      }
+
+      .previous::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50px;
+        border-top: 20px solid transparent;
+        border-right: 20px solid #000;
+        border-bottom: 20px solid transparent;
+        border-left: 20px solid transparent;
+      }
+
+      .next::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        right: 50px;
+        border-top: 20px solid transparent;
+        border-right: 20px solid transparent;
+        border-bottom: 20px solid transparent;
+        border-left: 20px solid #000;
+      }
+
+      .custom,
+      .footer {
+        display: flex;
+        justify-content: center;
+      }
+
+      .about {
+        margin-left: 20px;
+        color: blue;
+        cursor: pointer;
+        text-decoration: underline;
+      }
+
+      #draw {
+        padding: 10px;
+        background-color: deepskyblue;
+        color: #fff;
+      }
+
+      #draw p {
+        margin: 0;
+      }
+
+      p.currentname {
+        font-size: 32px;
+        text-align: center;
+      }
+
+      p.copy {
+        color: #aaa;
+      }
+
+      .story {
+        display: none;
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        padding: 10%;
+        background-color: rgba(255, 255, 255, 0.9);
+      }
+
+      .story p {
+        max-width: 700px;
+      }
+
+      .story.show {
+        display: block;
+      }
+
+      .close {
+        color: blue;
+        cursor: pointer;
+        text-decoration: underline;
+      }
+    </style>
+    <meta name="author" content="Joost Jansen" />
+    <meta
+      name="keywords"
+      content="joost, jansen, joostjansen, generative, art, generativeart, developer, development, software"
+    />
+    <meta
+      name="description"
+      content="I like making software that is useful to people, that works FOR people and not AGAINST people. I have a bit too many hobbies and making visualisations like this is one of them."
+    />
+  </head>
+
+  <body>
+    <div class="app">
+      <p class="currentname"></p>
+      <div class="controls">
+        <div class="previous"></div>
+        <div class="next"></div>
+      </div>
+      <div class="custom">
+        <input type="text" name="newname" id="newname" />
+        <div id="draw">
+          <p>draw</p>
+        </div>
+      </div>
+      <div class="footer">
+        <p class="copy">joostjansen &copy; 2020</p>
+        <p class="about">about</p>
+      </div>
+      <div class="story">
+        <h1>Hoi, ik ben Joost.</h1>
+        <p>
+          Ik maak graag software waar mensen wat aan hebben. Ik heb iets teveel
+          hobby's en dit soort visualisaties maken is er een van. Ik werk
+          momenteel als Software Tester bij Sogeti, en ik heb Software
+          Engineering gestudeerd aan de Hogeschool Utrecht. Naast mijn werk maak
+          ik graaf foto's van de wereld om mij heen, op instagram kan je mijn
+          portfolio vinden: @pictures.jjpeg
+        </p>
+        <p class="close">close</p>
+      </div>
+    </div>
+
+    <canvas></canvas>
+
+    <script>
+      const alphabet = [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g",
+        "h",
+        "i",
+        "j",
+        "k",
+        "l",
+        "m",
+        "n",
+        "o",
+        "p",
+        "q",
+        "r",
+        "s",
+        "t",
+        "u",
+        "v",
+        "w",
+        "x",
+        "y",
+        "z",
+      ];
+      let names = [
+        "joost",
+        "tijmen",
+        "kelvin",
+        "guido",
+        "willemijn",
+        "marijn",
+        "kiki",
+        "laura",
+        "stijn",
+        "jansen",
+        "alma",
+        "albert",
+        "maartje",
+        "christian",
+        "pavel",
+      ];
+      let drawIndex = 0;
+
+      const halfabet = alphabet.length / 2;
+
+      const canvas = document.querySelector("canvas");
+      const context = canvas.getContext("2d");
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      context.fillStyle = "#fff";
+      context.strokeStyle = "#000";
+      context.lineJoin = "round";
+      context.lineCap = "round";
+      context.lineWidth = 5;
+      let size = 5;
+
+      const previous = document.querySelector(".previous");
+      const next = document.querySelector(".next");
+      previous.addEventListener("click", () => drawPrevious());
+      next.addEventListener("click", () => drawNext());
+
+      const nameLabel = document.querySelector("p.currentname");
+      const nameInput = document.querySelector("input#newname");
+      const nameSubmit = document.querySelector("#draw");
+      nameSubmit.addEventListener("click", (e) => {
+        e.preventDefault();
+        addName();
+      });
+
+      const about = document.querySelector(".about");
+      const story = document.querySelector(".story");
+      const close = document.querySelector(".close");
+      about.addEventListener("click", () => openAbout());
+      close.addEventListener("click", () => closeAbout());
+
+      function main() {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.save();
+        context.translate(canvas.width / 2, canvas.height / 2);
+        let currentName = names[drawIndex].replace(/[\. ]/g, "").toLowerCase();
+        nameLabel.innerHTML = currentName;
+        for (let letter of currentName) {
+          // this is where the magic happens
+          const position = alphabet.indexOf(letter) + 1;
+          const len = position * size;
+          drawLine(len);
+          rotateLine(position);
+        }
+        context.restore();
+      }
+      main();
+
+      function drawPrevious() {
+        if (drawIndex === 0) return;
+        drawIndex--;
+        context.fillStyle = "#fff";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        main();
+      }
+
+      function drawNext() {
+        if (drawIndex === names.length - 1) return;
+        drawIndex++;
+        context.fillStyle = "#fff";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        main();
+      }
+
+      function drawLine(x, y, length) {
+        context.beginPath();
+        context.moveTo(x, y);
+        context.lineTo(0, length);
+        context.closePath();
+        context.stroke();
+        context.translate(0, length);
+      }
+
+      function drawLine(length) {
+        context.beginPath();
+        context.moveTo(0, 0);
+        context.lineTo(0, length);
+        context.closePath();
+        context.stroke();
+        context.translate(0, length);
+      }
+
+      function rotateLine(position) {
+        if (position < halfabet) {
+          context.rotate((-90 * Math.PI) / 180);
+        } else if (position > halfabet) {
+          context.rotate((90 * Math.PI) / 180);
+        } else if (position === halfabet) {
+          context.rotate((180 * Math.PI) / 180);
+        }
+      }
+
+      function addName() {
+        const newName = nameInput.value;
+        names.splice(drawIndex + 1, 0, newName);
+        drawNext();
+      }
+
+      function openAbout() {
+        story.classList.add("show");
+      }
+
+      function closeAbout() {
+        story.classList.remove("show");
+      }
+    </script>
+  </body>
+</html>
